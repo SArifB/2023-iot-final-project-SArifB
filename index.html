@@ -20,7 +20,7 @@
     <title>Weather App</title>
   </head>
   <body>
-    <!-- navBar -->
+    <!-- Navbar -->
     <div id="Navbar"></div>
 
     <!-- Header -->
@@ -28,9 +28,13 @@
 
     <!-- Tables -->
     <div id="MainTable" class="container-fluid"></div>
-    <div id="SideTable" class="container-fluid"></div>
+    <div id="SideContainer" class="container-fluid">
+      <div id="SideTable" style="width: 50%"></div>
+      <div id="ChartTable" style="width: 50%"></div>
+    </div>
 
-    <!-- My Scripts -->
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.min.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
