@@ -1,5 +1,50 @@
 "use strict";
 
+const stats = (() => {
+  const mean = (arr) => {
+    return arr.reduce((prev, curr) => prev + curr, 0) / arr.length;
+  };
+
+  const median = (arr) => {
+    const sort = arr.sort((a, b) => a - b);
+    const mid = Math.floor(sort.length / 2);
+    return sort.length % 2 === 0 ? (sort[mid - 1] + sort[mid]) / 2 : sort[mid];
+  };
+
+  const mode = (arr) => {
+    let counter = {};
+    let mode = [];
+    let max = 0;
+    arr.forEach((n) => {
+      if (!counter[n]) counter[n] = 0;
+      counter[n] += 1;
+
+      if (counter[n] === max) mode.push(n);
+      else if (counter[n] > max) {
+        max = counter[n];
+        mode = [n];
+      }
+    });
+    return mode;
+  };
+
+  const range = (arr) => {
+    const sort = arr.sort((a, b) => a - b);
+    return sort[arr.length - 1] - sort[0];
+  };
+
+  const stdDev = (arr) => {
+    const mean = arr.reduce((prev, curr) => prev + curr, 0) / arr.length;
+    const tmp = arr.map((n) => {
+      return Math.pow(Math.abs(n - mean), 2);
+    });
+    return Math.sqrt(tmp.reduce((prev, curr) => prev + curr, 0) / tmp.length);
+  };
+
+  return { mean, median, mode, range, stdDev };
+})();
+console.log(stats.stdDev([11, 22, 22, 34, 51, 34]));
+
 const navBar = document.getElementById("Navbar");
 navBar.innerHTML = `
   <nav id="navbar" class="navbar navbar-expand-lg navbar-light bg-light">
