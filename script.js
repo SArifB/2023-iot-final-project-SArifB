@@ -1,5 +1,6 @@
 "use strict";
 
+// ----------------------------------------------------------------------------------
 const stats = (() => {
   const mean = (arr) => {
     return arr.reduce((prev, curr) => prev + curr, 0) / arr.length;
@@ -43,8 +44,21 @@ const stats = (() => {
 
   return { mean, median, mode, range, stdDev };
 })();
-console.log(stats.stdDev([11, 22, 22, 34, 51, 34]));
+// console.log(stats.stdDev([11, 22, 22, 34, 51, 34]));
 
+const fetchData = async (source) => {
+  try {
+    // const res = await fetch(`test.json`);
+    const res = await fetch(source);
+    const data = await res.json();
+    // console.log(data);
+    return data;
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+// ----------------------------------------------------------------------------------
 const navBar = document.getElementById("Navbar");
 navBar.innerHTML = `
   <nav id="navbar" class="navbar navbar-expand-lg navbar-light bg-light">
@@ -74,18 +88,7 @@ navBar.innerHTML = `
   </nav>
 `;
 
-const fetchData = async (source) => {
-  try {
-    // const res = await fetch(`test.json`);
-    const res = await fetch(source);
-    const data = await res.json();
-    // console.log(data);
-    return data;
-  } catch (e) {
-    console.error(e);
-  }
-};
-
+// ----------------------------------------------------------------------------------
 const createMainPage = async () => {
   const data = await fetchData(
     `https://webapi19sa-1.course.tamk.cloud/v1/weather/limit/50`
@@ -123,12 +126,15 @@ const createMainPage = async () => {
   });
 };
 
-const createSecondaryPage = async (dataType) => {
-  const data = await fetchData(
-    `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}`
-  );
+// ----------------------------------------------------------------------------------
+const createSecondaryPage = async (
+  dataType,
+  showAltData = false,
+  timeSpan = 0
+) => {
   const table = document.getElementById("SideTable");
   const chart = document.getElementById("ChartTable");
+  const dropDowns = document.getElementById("DropDowns");
 
   table.innerHTML = `
     <table class="table table-hover">
@@ -143,35 +149,68 @@ const createSecondaryPage = async (dataType) => {
       </tbody>
     </table>
   `;
-  const tableBody = document.getElementById("tableBody");
 
   chart.innerHTML = `
     <canvas id="Forecast"></canvas>
-    `;
+  `;
 
-  // const temps = data.map((n) => n[datatype]);
-  const date1 = data.map((n) => new Date(n.date_time).toLocaleDateString());
-  const date2 = data.map((n) => new Date(n.date_time).toLocaleTimeString());
+  dropDowns.innerHTML = `
+    <a
+      class="btn btn-primary dropdown-toggle"
+      href="#"
+      role="button"
+      data-bs-toggle="dropdown"
+    >
+      Timespan
+    </a>    
+    <ul class="dropdown-menu">
+      <li><a id="item-1" class="dropdown-item" href="#">Latest 20 readings</a></li>
+      <li><a id="item-2" class="dropdown-item" href="#">Last 24 hours, average per hour</a></li>
+      <li><a id="item-3" class="dropdown-item" href="#">Last 48 hours, average per hour</a></li>
+      <li><a id="item-4" class="dropdown-item" href="#">Last 72 hours, average per hour</a></li>
+      <li><a id="item-5" class="dropdown-item" href="#">Last week, average per hour</a>
+      <li><a id="item-6" class="dropdown-item" href="#">Last month, average per hour</a>
+      </li>
+    </ul
+  `;
 
+  const data = showAltData
+    ? await fetchData(
+        `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/${timeSpan}`
+      )
+    : await fetchData(
+        `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/`
+      );
+
+  const date = data.map((n) => new Date(n.date_time));
+
+  const tableBody = document.getElementById("tableBody");
   data.forEach((elem, idx) => {
     const row = document.createElement("tr");
     row.innerHTML = `
-        <td scope="row">${date1[idx]}</td>
-        <td>${date2[idx]}</td>
-        <td>${elem[dataType]}</td>
-      `;
+      <td scope="row">${date[idx].toLocaleDateString()}</td>
+      <td>${date[idx].toLocaleTimeString()}</td>
+      <td>${elem[dataType]}</td>
+    `;
     tableBody.appendChild(row);
   });
 
-  // let xVals = date2;
-  // let yVals = temps;
-  // let barColors = ["red", "green", "blue", "orange", "brown"];
+  const datatype = showAltData
+    ? Object.entries(data[0])[1][0]
+    : Object.entries(data[0])[2][0];
 
-  const datatype = Object.entries(data[0])[2][0];
+  const prettyDataType = dataType.replace("_", " ");
+  const altText =
+    timeSpan > 72
+      ? `Average readings per hour of ${prettyDataType} for last ${
+          timeSpan / 24
+        } days`
+      : `Average readings per hour of ${prettyDataType} for last ${timeSpan} hours`;
+
   new Chart("Forecast", {
     type: "bar",
     data: {
-      labels: date2,
+      labels: date.map((n) => n.toLocaleString()),
       datasets: [
         {
           // backgroundColor: barColors,
@@ -185,13 +224,37 @@ const createSecondaryPage = async (dataType) => {
         legend: { display: false },
         title: {
           display: true,
-          text: `20 latest ${dataType.replace("_", " ")} readings`,
+          text: showAltData ? altText : `20 latest ${prettyDataType} readings`,
         },
       },
     },
   });
+
+  document
+    .getElementById("item-1")
+    .addEventListener("click", () => createSecondaryPage(dataType, false));
+  document
+    .getElementById("item-2")
+    .addEventListener("click", () => createSecondaryPage(dataType, true, 24));
+  document
+    .getElementById("item-3")
+    .addEventListener("click", () => createSecondaryPage(dataType, true, 48));
+  document
+    .getElementById("item-4")
+    .addEventListener("click", () => createSecondaryPage(dataType, true, 72));
+  document
+    .getElementById("item-5")
+    .addEventListener("click", () =>
+      createSecondaryPage(dataType, true, 24 * 7)
+    );
+  document
+    .getElementById("item-6")
+    .addEventListener("click", () =>
+      createSecondaryPage(dataType, true, 24 * 30)
+    );
 };
 
+// ----------------------------------------------------------------------------------
 const assignHeader = (title) => {
   const header = document.getElementById("Header");
   header.innerHTML = title;
