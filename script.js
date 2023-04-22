@@ -44,14 +44,11 @@ const stats = (() => {
 
   return { mean, median, mode, range, stdDev };
 })();
-// console.log(stats.stdDev([11, 22, 22, 34, 51, 34]));
 
 const fetchData = async (source) => {
   try {
-    // const res = await fetch(`test.json`);
     const res = await fetch(source);
     const data = await res.json();
-    // console.log(data);
     return data;
   } catch (e) {
     console.error(e);
@@ -59,8 +56,7 @@ const fetchData = async (source) => {
 };
 
 // ----------------------------------------------------------------------------------
-const navBar = document.getElementById("Navbar");
-navBar.innerHTML = `
+document.getElementById("Navbar").innerHTML = `
   <nav id="navbar" class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
       <a class="navbar-brand">Weather Station</a>
@@ -74,13 +70,13 @@ navBar.innerHTML = `
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link" id="PageLink-1" href="./index.html">Main Page</a>
+            <a class="nav-link" id="PageLink-1" href="#">Main Page</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="PageLink-2" href="./index.html">Temperature</a>
+            <a class="nav-link" id="PageLink-2" href="#">Temperature</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="PageLink-3" href="./index.html">Humidity in</a>
+            <a class="nav-link" id="PageLink-3" href="#">Humidity in</a>
           </li>
         </ul>
       </div>
@@ -88,13 +84,23 @@ navBar.innerHTML = `
   </nav>
 `;
 
+document
+  .getElementById("PageLink-1")
+  .addEventListener("click", () => createMainPage());
+
+document
+  .getElementById("PageLink-2")
+  .addEventListener("click", () => createSecondaryPage("temperature"));
+
+document
+  .getElementById("PageLink-3")
+  .addEventListener("click", () => createSecondaryPage("humidity_in"));
+
 // ----------------------------------------------------------------------------------
 const createMainPage = async () => {
-  const data = await fetchData(
-    `https://webapi19sa-1.course.tamk.cloud/v1/weather/limit/50`
-  );
-  const table = document.getElementById("MainTable");
-  table.innerHTML = `
+  document.getElementById("Header").innerText = "Main Page";
+
+  document.getElementById("Data").innerHTML = `
     <table class="table table-hover">
       <thead class="table-light">
         <tr>
@@ -103,58 +109,16 @@ const createMainPage = async () => {
           <th scope="col">Data</th>
         </tr>
       </thead>
-      <tbody id="tableBody">
-      </tbody>
-    </table>
-  `;
-  const tableBody = document.getElementById("tableBody");
-
-  data.forEach((elem) => {
-    const [innerData] = Object.entries(elem.data);
-    const date = new Date(elem.date_time).toLocaleString();
-    const row = document.createElement("tr");
-    const DataTitle =
-      innerData[0].charAt(0).toUpperCase() +
-      innerData[0].slice(1).replace("_", " ");
-
-    row.innerHTML = `
-        <td scope="row">${date}</td>
-        <td>${DataTitle}</td>
-        <td>${innerData[1]}</td>
-      `;
-    tableBody.appendChild(row);
-  });
-};
-
-// ----------------------------------------------------------------------------------
-const createSecondaryPage = async (
-  dataType,
-  showAltData = false,
-  timeSpan = 0
-) => {
-  const table = document.getElementById("SideTable");
-  const chart = document.getElementById("ChartTable");
-  const dropDowns = document.getElementById("DropDowns");
-
-  table.innerHTML = `
-    <table class="table table-hover">
-      <thead class="table-light">
-        <tr>
-          <th scope="col">Local Date</th>
-          <th scope="col">Local Time</th>
-          <th scope="col">Data</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody">
+      <tbody id="TableBody">
       </tbody>
     </table>
   `;
 
-  chart.innerHTML = `
+  document.getElementById("Chart").innerHTML = `
     <canvas id="Forecast"></canvas>
   `;
 
-  dropDowns.innerHTML = `
+  document.getElementById("Drop").innerHTML = `
     <a
       class="btn btn-primary dropdown-toggle"
       href="#"
@@ -171,7 +135,142 @@ const createSecondaryPage = async (
       <li><a id="item-5" class="dropdown-item" href="#">Last week, average per hour</a>
       <li><a id="item-6" class="dropdown-item" href="#">Last month, average per hour</a>
       </li>
-    </ul
+    </ul>
+    <a
+      class="btn btn-primary dropdown-toggle"
+      href="#"
+      role="button"
+      data-bs-toggle="dropdown"
+    >
+      sdsdsds
+    </a>    
+    <ul class="dropdown-menu">
+      <li><a id="item-1" class="dropdown-item" href="#">Latest 20 readings</a></li>
+      <li><a id="item-2" class="dropdown-item" href="#">Last 24 hours, average per hour</a></li>
+      <li><a id="item-3" class="dropdown-item" href="#">Last 48 hours, average per hour</a></li>
+      <li><a id="item-4" class="dropdown-item" href="#">Last 72 hours, average per hour</a></li>
+      <li><a id="item-5" class="dropdown-item" href="#">Last week, average per hour</a>
+      <li><a id="item-6" class="dropdown-item" href="#">Last month, average per hour</a>
+      </li>
+    </ul>
+  `;
+
+  const data = await fetchData(
+    `https://webapi19sa-1.course.tamk.cloud/v1/weather/limit/50`
+  );
+
+  const date = data.map((n) => new Date(n.date_time));
+
+  const tableBody = document.getElementById("TableBody");
+  data.forEach((elem, idx) => {
+    const [innerData] = Object.entries(elem.data);
+    const row = document.createElement("tr");
+    const DataTitle =
+      innerData[0].charAt(0).toUpperCase() +
+      innerData[0].slice(1).replace("_", " ");
+
+    row.innerHTML = `
+      <td scope="row">${date[idx].toLocaleString()}</td>
+      <td>${DataTitle}</td>
+      <td>${innerData[1]}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+
+  new Chart("Forecast", {
+    type: "bar",
+    data: {
+      labels: date.map((n) => n.toLocaleString()),
+      datasets: [
+        {
+          backgroundColor: "#adf",
+          hoverBackgroundColor: "#7bf",
+          data: data.map((n) => n[dataType]),
+        },
+      ],
+    },
+    options: {
+      plugins: {
+        colors: { colors: true },
+        legend: { display: false },
+        title: {
+          display: true,
+          text: showAltData ? altText : `20 latest ${fmtDataType} readings`,
+        },
+      },
+    },
+  });
+
+  document
+    .getElementById("item-01")
+    .addEventListener("click", () => createSecondaryPage(dataType, false));
+  document
+    .getElementById("item-02")
+    .addEventListener("click", () => createSecondaryPage(dataType, true, 24));
+  document
+    .getElementById("item-03")
+    .addEventListener("click", () => createSecondaryPage(dataType, true, 48));
+  document
+    .getElementById("item-04")
+    .addEventListener("click", () => createSecondaryPage(dataType, true, 72));
+  document
+    .getElementById("item-05")
+    .addEventListener("click", () =>
+      createSecondaryPage(dataType, true, 24 * 7)
+    );
+  document
+    .getElementById("item-06")
+    .addEventListener("click", () =>
+      createSecondaryPage(dataType, true, 24 * 30)
+    );
+};
+
+// ----------------------------------------------------------------------------------
+const createSecondaryPage = async (
+  dataType,
+  showAltData = false,
+  timeSpan = 0
+) => {
+  const fmtDataType =
+    dataType.charAt(0).toUpperCase() + dataType.slice(1).replace("_", " ");
+  document.getElementById("Header").innerText = fmtDataType;
+
+  document.getElementById("Data").innerHTML = `
+    <table class="table table-hover">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Local Date</th>
+          <th scope="col">Local Time</th>
+          <th scope="col">Data</th>
+        </tr>
+      </thead>
+      <tbody id="TableBody">
+      </tbody>
+    </table>
+  `;
+
+  document.getElementById("Chart").innerHTML = `
+    <canvas id="Forecast"></canvas>
+  `;
+
+  document.getElementById("Drop").innerHTML = `
+    <a
+      class="btn btn-primary dropdown-toggle"
+      href="#"
+      role="button"
+      data-bs-toggle="dropdown"
+    >
+      Timespan
+    </a>    
+    <ul class="dropdown-menu">
+      <li><a id="item-1" class="dropdown-item" href="#">Latest 20 readings</a></li>
+      <li><a id="item-2" class="dropdown-item" href="#">Last 24 hours, average per hour</a></li>
+      <li><a id="item-3" class="dropdown-item" href="#">Last 48 hours, average per hour</a></li>
+      <li><a id="item-4" class="dropdown-item" href="#">Last 72 hours, average per hour</a></li>
+      <li><a id="item-5" class="dropdown-item" href="#">Last week, average per hour</a>
+      <li><a id="item-6" class="dropdown-item" href="#">Last month, average per hour</a>
+      </li>
+    </ul>
   `;
 
   const data = showAltData
@@ -184,7 +283,7 @@ const createSecondaryPage = async (
 
   const date = data.map((n) => new Date(n.date_time));
 
-  const tableBody = document.getElementById("tableBody");
+  const tableBody = document.getElementById("TableBody");
   data.forEach((elem, idx) => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -195,17 +294,16 @@ const createSecondaryPage = async (
     tableBody.appendChild(row);
   });
 
-  const datatype = showAltData
-    ? Object.entries(data[0])[1][0]
-    : Object.entries(data[0])[2][0];
+  // const datatype = showAltData
+  //   ? Object.entries(data[0])[1][0]
+  //   : Object.entries(data[0])[2][0];
 
-  const prettyDataType = dataType.replace("_", " ");
   const altText =
     timeSpan > 72
-      ? `Average readings per hour of ${prettyDataType} for last ${
+      ? `Average readings per hour of ${fmtDataType} for last ${
           timeSpan / 24
         } days`
-      : `Average readings per hour of ${prettyDataType} for last ${timeSpan} hours`;
+      : `Average readings per hour of ${fmtDataType} for last ${timeSpan} hours`;
 
   new Chart("Forecast", {
     type: "bar",
@@ -213,78 +311,47 @@ const createSecondaryPage = async (
       labels: date.map((n) => n.toLocaleString()),
       datasets: [
         {
-          // backgroundColor: barColors,
-          data: data.map((n) => n[datatype]),
+          backgroundColor: "#adf",
+          hoverBackgroundColor: "#7bf",
+          data: data.map((n) => n[dataType]),
         },
       ],
     },
     options: {
       plugins: {
-        colors: { enabled: true },
+        colors: { colors: true },
         legend: { display: false },
         title: {
           display: true,
-          text: showAltData ? altText : `20 latest ${prettyDataType} readings`,
+          text: showAltData ? altText : `20 latest ${fmtDataType} readings`,
         },
       },
     },
   });
 
   document
-    .getElementById("item-1")
+    .getElementById("item-01")
     .addEventListener("click", () => createSecondaryPage(dataType, false));
   document
-    .getElementById("item-2")
+    .getElementById("item-02")
     .addEventListener("click", () => createSecondaryPage(dataType, true, 24));
   document
-    .getElementById("item-3")
+    .getElementById("item-03")
     .addEventListener("click", () => createSecondaryPage(dataType, true, 48));
   document
-    .getElementById("item-4")
+    .getElementById("item-04")
     .addEventListener("click", () => createSecondaryPage(dataType, true, 72));
   document
-    .getElementById("item-5")
+    .getElementById("item-05")
     .addEventListener("click", () =>
       createSecondaryPage(dataType, true, 24 * 7)
     );
   document
-    .getElementById("item-6")
+    .getElementById("item-06")
     .addEventListener("click", () =>
       createSecondaryPage(dataType, true, 24 * 30)
     );
 };
 
 // ----------------------------------------------------------------------------------
-const assignHeader = (title) => {
-  const header = document.getElementById("Header");
-  header.innerHTML = title;
-};
-
-const page = sessionStorage.page;
-if (page === "page3") {
-  assignHeader("Humidity in");
-  createSecondaryPage("humidity_in");
-} else if (page === "page2") {
-  assignHeader("Temperature");
-  createSecondaryPage("temperature");
-} else {
-  assignHeader("Main Page");
-  createMainPage();
-}
-// if (page === "page1" || page === undefined)
-// <canvas id="weather-forecast"></canvas>
-
-const link1 = document.getElementById("PageLink-1");
-link1.addEventListener("click", () => {
-  sessionStorage.setItem("page", "page1");
-});
-
-const link2 = document.getElementById("PageLink-2");
-link2.addEventListener("click", () => {
-  sessionStorage.setItem("page", "page2");
-});
-
-const link3 = document.getElementById("PageLink-3");
-link3.addEventListener("click", () => {
-  sessionStorage.setItem("page", "page3");
-});
+createMainPage();
