@@ -70,13 +70,13 @@ document.getElementById("Navbar").innerHTML = `
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link" id="PageLink-1" href="#">Main Page</a>
+            <a class="nav-link" id="Page-1" href="#">Main Page</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="PageLink-2" href="#">Temperature</a>
+            <a class="nav-link" id="Page-2" href="#">Temperature</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="PageLink-3" href="#">Humidity in</a>
+            <a class="nav-link" id="Page-3" href="#">Humidity in</a>
           </li>
         </ul>
       </div>
@@ -84,20 +84,20 @@ document.getElementById("Navbar").innerHTML = `
   </nav>
 `;
 
-document
-  .getElementById("PageLink-1")
-  .addEventListener("click", () => createMainPage());
+document.getElementById("Page-1").addEventListener("click", () => crPage());
 
 document
-  .getElementById("PageLink-2")
-  .addEventListener("click", () => createSecondaryPage("temperature"));
+  .getElementById("Page-2")
+  .addEventListener("click", () => crPage("temperature"));
 
 document
-  .getElementById("PageLink-3")
-  .addEventListener("click", () => createSecondaryPage("humidity_in"));
+  .getElementById("Page-3")
+  .addEventListener("click", () => crPage("humidity_in"));
+
+let mainDataType = "temperature";
 
 // ----------------------------------------------------------------------------------
-const createMainPage = async () => {
+const crMnPage = async () => {
   document.getElementById("Header").innerText = "Main Page";
 
   document.getElementById("Data").innerHTML = `
@@ -114,127 +114,30 @@ const createMainPage = async () => {
     </table>
   `;
 
-  document.getElementById("Chart").innerHTML = `
-    <canvas id="Forecast"></canvas>
-  `;
-
-  document.getElementById("Drop").innerHTML = `
-    <a
-      class="btn btn-primary dropdown-toggle"
-      href="#"
-      role="button"
-      data-bs-toggle="dropdown"
-    >
-      Timespan
-    </a>    
-    <ul class="dropdown-menu">
-      <li><a id="item-1" class="dropdown-item" href="#">Latest 20 readings</a></li>
-      <li><a id="item-2" class="dropdown-item" href="#">Last 24 hours, average per hour</a></li>
-      <li><a id="item-3" class="dropdown-item" href="#">Last 48 hours, average per hour</a></li>
-      <li><a id="item-4" class="dropdown-item" href="#">Last 72 hours, average per hour</a></li>
-      <li><a id="item-5" class="dropdown-item" href="#">Last week, average per hour</a>
-      <li><a id="item-6" class="dropdown-item" href="#">Last month, average per hour</a>
-      </li>
-    </ul>
-    <a
-      class="btn btn-primary dropdown-toggle"
-      href="#"
-      role="button"
-      data-bs-toggle="dropdown"
-    >
-      sdsdsds
-    </a>    
-    <ul class="dropdown-menu">
-      <li><a id="item-1" class="dropdown-item" href="#">Latest 20 readings</a></li>
-      <li><a id="item-2" class="dropdown-item" href="#">Last 24 hours, average per hour</a></li>
-      <li><a id="item-3" class="dropdown-item" href="#">Last 48 hours, average per hour</a></li>
-      <li><a id="item-4" class="dropdown-item" href="#">Last 72 hours, average per hour</a></li>
-      <li><a id="item-5" class="dropdown-item" href="#">Last week, average per hour</a>
-      <li><a id="item-6" class="dropdown-item" href="#">Last month, average per hour</a>
-      </li>
-    </ul>
-  `;
-
   const data = await fetchData(
     `https://webapi19sa-1.course.tamk.cloud/v1/weather/limit/50`
   );
-
-  const date = data.map((n) => new Date(n.date_time));
-
   const tableBody = document.getElementById("TableBody");
-  data.forEach((elem, idx) => {
+
+  data.forEach((elem) => {
     const [innerData] = Object.entries(elem.data);
+    const date = new Date(elem.date_time).toLocaleString();
     const row = document.createElement("tr");
     const DataTitle =
       innerData[0].charAt(0).toUpperCase() +
       innerData[0].slice(1).replace("_", " ");
 
     row.innerHTML = `
-      <td scope="row">${date[idx].toLocaleString()}</td>
+      <td scope="row">${date}</td>
       <td>${DataTitle}</td>
       <td>${innerData[1]}</td>
     `;
     tableBody.appendChild(row);
   });
-
-  new Chart("Forecast", {
-    type: "bar",
-    data: {
-      labels: date.map((n) => n.toLocaleString()),
-      datasets: [
-        {
-          backgroundColor: "#adf",
-          hoverBackgroundColor: "#7bf",
-          data: data.map((n) => n[dataType]),
-        },
-      ],
-    },
-    options: {
-      plugins: {
-        colors: { colors: true },
-        legend: { display: false },
-        title: {
-          display: true,
-          text: showAltData ? altText : `20 latest ${fmtDataType} readings`,
-        },
-      },
-    },
-  });
-
-  document
-    .getElementById("item-01")
-    .addEventListener("click", () => createSecondaryPage(dataType, false));
-  document
-    .getElementById("item-02")
-    .addEventListener("click", () => createSecondaryPage(dataType, true, 24));
-  document
-    .getElementById("item-03")
-    .addEventListener("click", () => createSecondaryPage(dataType, true, 48));
-  document
-    .getElementById("item-04")
-    .addEventListener("click", () => createSecondaryPage(dataType, true, 72));
-  document
-    .getElementById("item-05")
-    .addEventListener("click", () =>
-      createSecondaryPage(dataType, true, 24 * 7)
-    );
-  document
-    .getElementById("item-06")
-    .addEventListener("click", () =>
-      createSecondaryPage(dataType, true, 24 * 30)
-    );
 };
 
 // ----------------------------------------------------------------------------------
-const createSecondaryPage = async (
-  dataType,
-  showAltData = false,
-  timeSpan = 0
-) => {
-  const fmtDataType =
-    dataType.charAt(0).toUpperCase() + dataType.slice(1).replace("_", " ");
-  document.getElementById("Header").innerText = fmtDataType;
-
+const crSecPage = async (dataType, timeSpan) => {
   document.getElementById("Data").innerHTML = `
     <table class="table table-hover">
       <thead class="table-light">
@@ -253,25 +156,9 @@ const createSecondaryPage = async (
     <canvas id="Forecast"></canvas>
   `;
 
-  document.getElementById("Drop").innerHTML = `
-    <a
-      class="btn btn-primary dropdown-toggle"
-      href="#"
-      role="button"
-      data-bs-toggle="dropdown"
-    >
-      Timespan
-    </a>    
-    <ul class="dropdown-menu">
-      <li><a id="item-1" class="dropdown-item" href="#">Latest 20 readings</a></li>
-      <li><a id="item-2" class="dropdown-item" href="#">Last 24 hours, average per hour</a></li>
-      <li><a id="item-3" class="dropdown-item" href="#">Last 48 hours, average per hour</a></li>
-      <li><a id="item-4" class="dropdown-item" href="#">Last 72 hours, average per hour</a></li>
-      <li><a id="item-5" class="dropdown-item" href="#">Last week, average per hour</a>
-      <li><a id="item-6" class="dropdown-item" href="#">Last month, average per hour</a>
-      </li>
-    </ul>
-  `;
+  const showAltData = timeSpan >= 24;
+
+  mainDataType = dataType;
 
   const data = showAltData
     ? await fetchData(
@@ -294,9 +181,7 @@ const createSecondaryPage = async (
     tableBody.appendChild(row);
   });
 
-  // const datatype = showAltData
-  //   ? Object.entries(data[0])[1][0]
-  //   : Object.entries(data[0])[2][0];
+  const fmtDataType = dataType.replace("_", " ");
 
   const altText =
     timeSpan > 72
@@ -309,6 +194,7 @@ const createSecondaryPage = async (
     type: "bar",
     data: {
       labels: date.map((n) => n.toLocaleString()),
+      legend: fmtDataType,
       datasets: [
         {
           backgroundColor: "#adf",
@@ -319,7 +205,6 @@ const createSecondaryPage = async (
     },
     options: {
       plugins: {
-        colors: { colors: true },
         legend: { display: false },
         title: {
           display: true,
@@ -328,30 +213,93 @@ const createSecondaryPage = async (
       },
     },
   });
-
-  document
-    .getElementById("item-01")
-    .addEventListener("click", () => createSecondaryPage(dataType, false));
-  document
-    .getElementById("item-02")
-    .addEventListener("click", () => createSecondaryPage(dataType, true, 24));
-  document
-    .getElementById("item-03")
-    .addEventListener("click", () => createSecondaryPage(dataType, true, 48));
-  document
-    .getElementById("item-04")
-    .addEventListener("click", () => createSecondaryPage(dataType, true, 72));
-  document
-    .getElementById("item-05")
-    .addEventListener("click", () =>
-      createSecondaryPage(dataType, true, 24 * 7)
-    );
-  document
-    .getElementById("item-06")
-    .addEventListener("click", () =>
-      createSecondaryPage(dataType, true, 24 * 30)
-    );
 };
 
 // ----------------------------------------------------------------------------------
-createMainPage();
+const crPage = async (dataType = "none") => {
+  if (dataType === "none") {
+    crMnPage();
+  } else {
+    document.getElementById("Header").innerText =
+      dataType.charAt(0).toUpperCase() + dataType.slice(1).replace("_", " ");
+    crSecPage(dataType, 20);
+  }
+
+  document.getElementById("Drop").innerHTML = `
+    <a
+      class="btn btn-primary dropdown-toggle"
+      href="#"
+      role="button"
+      data-bs-toggle="dropdown"
+    >
+      Datatype
+    </a>    
+    <ul class="dropdown-menu">
+      <li><a id="item-01" class="dropdown-item" href="#">Temperature</a></li>
+      <li><a id="item-02" class="dropdown-item" href="#">Humidity in</a></li>
+      <li><a id="item-03" class="dropdown-item" href="#">Humidity out</a></li>
+      <li><a id="item-04" class="dropdown-item" href="#">Light</a></li>
+      <li><a id="item-05" class="dropdown-item" href="#">Wind speed</a>
+      <li><a id="item-06" class="dropdown-item" href="#">Rain</a>
+      </li>
+    </ul>
+    <a
+      class="btn btn-primary dropdown-toggle"
+      href="#"
+      role="button"
+      data-bs-toggle="dropdown"
+    >
+      Timespan
+    </a>    
+    <ul class="dropdown-menu">
+      <li><a id="item-11" class="dropdown-item" href="#">Latest 20 readings</a></li>
+      <li><a id="item-12" class="dropdown-item" href="#">Last 24 hours, average per hour</a></li>
+      <li><a id="item-13" class="dropdown-item" href="#">Last 48 hours, average per hour</a></li>
+      <li><a id="item-14" class="dropdown-item" href="#">Last 72 hours, average per hour</a></li>
+      <li><a id="item-15" class="dropdown-item" href="#">Last week, average per hour</a>
+      <li><a id="item-16" class="dropdown-item" href="#">Last month, average per hour</a>
+      </li>
+    </ul>
+  `;
+
+  document
+    .getElementById("item-01")
+    .addEventListener("click", () => crSecPage("temperature"));
+  document
+    .getElementById("item-02")
+    .addEventListener("click", () => crSecPage("humidity_in"));
+  document
+    .getElementById("item-03")
+    .addEventListener("click", () => crSecPage("humidity_out"));
+  document
+    .getElementById("item-04")
+    .addEventListener("click", () => crSecPage("light"));
+  document
+    .getElementById("item-05")
+    .addEventListener("click", () => crSecPage("wind_speed"));
+  document
+    .getElementById("item-06")
+    .addEventListener("click", () => crSecPage("rain"));
+
+  document
+    .getElementById("item-11")
+    .addEventListener("click", () => crSecPage(mainDataType));
+  document
+    .getElementById("item-12")
+    .addEventListener("click", () => crSecPage(mainDataType, 24));
+  document
+    .getElementById("item-13")
+    .addEventListener("click", () => crSecPage(mainDataType, 48));
+  document
+    .getElementById("item-14")
+    .addEventListener("click", () => crSecPage(mainDataType, 72));
+  document
+    .getElementById("item-15")
+    .addEventListener("click", () => crSecPage(mainDataType, 24 * 7));
+  document
+    .getElementById("item-16")
+    .addEventListener("click", () => crSecPage(mainDataType, 24 * 30));
+};
+
+// ----------------------------------------------------------------------------------
+crPage();
