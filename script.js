@@ -45,6 +45,15 @@ const stats = (() => {
   return { mean, median, mode, range, stdDev };
 })();
 
+const mainData = (() => {
+  let type = "temperature";
+
+  const setType = (t) => (type = t);
+  const getType = () => type;
+
+  return { setType, getType };
+})();
+
 const fetchData = async (source) => {
   try {
     const res = await fetch(source);
@@ -56,7 +65,8 @@ const fetchData = async (source) => {
 };
 
 // ----------------------------------------------------------------------------------
-document.getElementById("Navbar").innerHTML = `
+const crNavbar = () => {
+  document.getElementById("Navbar").innerHTML = `
   <nav id="navbar" class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
       <a class="navbar-brand">Weather Station</a>
@@ -84,17 +94,16 @@ document.getElementById("Navbar").innerHTML = `
   </nav>
 `;
 
-document.getElementById("Page-1").addEventListener("click", () => crPage());
+  document.getElementById("Page-1").addEventListener("click", () => crPage());
 
-document
-  .getElementById("Page-2")
-  .addEventListener("click", () => crPage("temperature"));
+  document
+    .getElementById("Page-2")
+    .addEventListener("click", () => crPage("temperature"));
 
-document
-  .getElementById("Page-3")
-  .addEventListener("click", () => crPage("humidity_in"));
-
-let mainDataType = "temperature";
+  document
+    .getElementById("Page-3")
+    .addEventListener("click", () => crPage("humidity_in"));
+};
 
 // ----------------------------------------------------------------------------------
 const crMnPage = async () => {
@@ -128,7 +137,7 @@ const crMnPage = async () => {
       innerData[0].slice(1).replace("_", " ");
 
     row.innerHTML = `
-      <td scope="row">${date}</td>
+      <td>${date}</td>
       <td>${DataTitle}</td>
       <td>${innerData[1]}</td>
     `;
@@ -158,9 +167,9 @@ const crSecPage = async (dataType, timeSpan) => {
 
   const showAltData = timeSpan >= 24;
 
-  mainDataType = dataType;
+  mainData.setType(dataType);
 
-  const data = showAltData
+  const rawData = showAltData
     ? await fetchData(
         `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/${timeSpan}`
       )
@@ -168,17 +177,18 @@ const crSecPage = async (dataType, timeSpan) => {
         `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/`
       );
 
-  const date = data.map((n) => new Date(n.date_time));
+  const date = rawData.map((n) => new Date(n.date_time));
+  const data = rawData.map((n) => parseFloat(n[dataType]));
 
   const tableBody = document.getElementById("TableBody");
   data.forEach((elem, idx) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td scope="row">${date[idx].toLocaleDateString()}</td>
+    const mainRow = document.createElement("tr");
+    mainRow.innerHTML = `
+      <td>${date[idx].toLocaleDateString()}</td>
       <td>${date[idx].toLocaleTimeString()}</td>
-      <td>${elem[dataType]}</td>
+      <td>${elem}</td>
     `;
-    tableBody.appendChild(row);
+    tableBody.appendChild(mainRow);
   });
 
   const fmtDataType = dataType.replace("_", " ");
@@ -199,7 +209,7 @@ const crSecPage = async (dataType, timeSpan) => {
         {
           backgroundColor: "#adf",
           hoverBackgroundColor: "#7bf",
-          data: data.map((n) => n[dataType]),
+          data: rawData.map((n) => n[dataType]),
         },
       ],
     },
@@ -213,6 +223,33 @@ const crSecPage = async (dataType, timeSpan) => {
       },
     },
   });
+
+  document.getElementById("More").innerHTML = `
+    <h5 class="m-2">Additional info</h5>
+    <table class="table table-hover">
+      <tbody>
+        <tr>
+          <td>Mean</td>
+          <td>${stats.mean(data)}</td>
+        </tr>
+          <td>Median</td>
+          <td>${stats.median(data)}</td>
+        <tr>
+        </tr>
+          <td>Mode</td>
+          <td>${stats.mode(data)}</td>
+        <tr>
+        </tr>
+          <td>Range</td>
+          <td>${stats.range(data)}</td>
+        </tr>
+        <tr>
+          <td>Standard deviation</td>
+          <td>${stats.stdDev(data)}</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
 };
 
 // ----------------------------------------------------------------------------------
@@ -283,23 +320,24 @@ const crPage = async (dataType = "none") => {
 
   document
     .getElementById("item-11")
-    .addEventListener("click", () => crSecPage(mainDataType));
+    .addEventListener("click", () => crSecPage(mainData.getType()));
   document
     .getElementById("item-12")
-    .addEventListener("click", () => crSecPage(mainDataType, 24));
+    .addEventListener("click", () => crSecPage(mainData.getType(), 24));
   document
     .getElementById("item-13")
-    .addEventListener("click", () => crSecPage(mainDataType, 48));
+    .addEventListener("click", () => crSecPage(mainData.getType(), 48));
   document
     .getElementById("item-14")
-    .addEventListener("click", () => crSecPage(mainDataType, 72));
+    .addEventListener("click", () => crSecPage(mainData.getType(), 72));
   document
     .getElementById("item-15")
-    .addEventListener("click", () => crSecPage(mainDataType, 24 * 7));
+    .addEventListener("click", () => crSecPage(mainData.getType(), 24 * 7));
   document
     .getElementById("item-16")
-    .addEventListener("click", () => crSecPage(mainDataType, 24 * 30));
+    .addEventListener("click", () => crSecPage(mainData.getType(), 24 * 30));
 };
 
 // ----------------------------------------------------------------------------------
+crNavbar();
 crPage();
