@@ -47,11 +47,18 @@ const stats = (() => {
 
 const mainData = (() => {
   let type = "temperature";
+  let updTable = false;
 
   const setType = (t) => (type = t);
   const getType = () => type;
+  const resetTableState = () => (updTable = false);
+  const getTableState = () => {
+    if (updTable) return true;
+    updTable = true;
+    return false;
+  };
 
-  return { setType, getType };
+  return { setType, getType, resetTableState, getTableState };
 })();
 
 const fetchData = async (source) => {
@@ -147,19 +154,22 @@ const crMnPage = async () => {
 
 // ----------------------------------------------------------------------------------
 const crSecPage = async (dataType, timeSpan) => {
-  document.getElementById("Data").innerHTML = `
-    <table class="table table-hover">
-      <thead class="table-light">
-        <tr>
-          <th scope="col">Local Date</th>
-          <th scope="col">Local Time</th>
-          <th scope="col">Data</th>
-        </tr>
-      </thead>
-      <tbody id="TableBody">
-      </tbody>
-    </table>
-  `;
+  const updTable = mainData.getTableState();
+
+  if (updTable)
+    document.getElementById("Data").innerHTML = `
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Local Date</th>
+            <th scope="col">Local Time</th>
+            <th scope="col">Data</th>
+          </tr>
+        </thead>
+        <tbody id="TableBody">
+        </tbody>
+      </table>
+    `;
 
   document.getElementById("Chart").innerHTML = `
     <canvas id="Forecast"></canvas>
@@ -181,15 +191,17 @@ const crSecPage = async (dataType, timeSpan) => {
   const data = rawData.map((n) => parseFloat(n[dataType]));
 
   const tableBody = document.getElementById("TableBody");
-  data.forEach((elem, idx) => {
-    const mainRow = document.createElement("tr");
-    mainRow.innerHTML = `
-      <td>${date[idx].toLocaleDateString()}</td>
-      <td>${date[idx].toLocaleTimeString()}</td>
-      <td>${elem}</td>
-    `;
-    tableBody.appendChild(mainRow);
-  });
+
+  if (updTable)
+    data.forEach((elem, idx) => {
+      const mainRow = document.createElement("tr");
+      mainRow.innerHTML = `
+        <td>${date[idx].toLocaleDateString()}</td>
+        <td>${date[idx].toLocaleTimeString()}</td>
+        <td>${elem}</td>
+      `;
+      tableBody.appendChild(mainRow);
+    });
 
   const fmtDataType = dataType.replace("_", " ");
 
@@ -253,15 +265,7 @@ const crSecPage = async (dataType, timeSpan) => {
 };
 
 // ----------------------------------------------------------------------------------
-const crPage = async (dataType = "none") => {
-  if (dataType === "none") {
-    crMnPage();
-  } else {
-    document.getElementById("Header").innerText =
-      dataType.charAt(0).toUpperCase() + dataType.slice(1).replace("_", " ");
-    crSecPage(dataType, 20);
-  }
-
+const crDropDown = () => {
   document.getElementById("Drop").innerHTML = `
     <a
       class="btn btn-primary dropdown-toggle"
@@ -276,9 +280,8 @@ const crPage = async (dataType = "none") => {
       <li><a id="item-02" class="dropdown-item" href="#">Humidity in</a></li>
       <li><a id="item-03" class="dropdown-item" href="#">Humidity out</a></li>
       <li><a id="item-04" class="dropdown-item" href="#">Light</a></li>
-      <li><a id="item-05" class="dropdown-item" href="#">Wind speed</a>
-      <li><a id="item-06" class="dropdown-item" href="#">Rain</a>
-      </li>
+      <li><a id="item-05" class="dropdown-item" href="#">Wind speed</a></li>
+      <li><a id="item-06" class="dropdown-item" href="#">Rain</a></li>
     </ul>
     <a
       class="btn btn-primary dropdown-toggle"
@@ -293,9 +296,8 @@ const crPage = async (dataType = "none") => {
       <li><a id="item-12" class="dropdown-item" href="#">Last 24 hours, average per hour</a></li>
       <li><a id="item-13" class="dropdown-item" href="#">Last 48 hours, average per hour</a></li>
       <li><a id="item-14" class="dropdown-item" href="#">Last 72 hours, average per hour</a></li>
-      <li><a id="item-15" class="dropdown-item" href="#">Last week, average per hour</a>
-      <li><a id="item-16" class="dropdown-item" href="#">Last month, average per hour</a>
-      </li>
+      <li><a id="item-15" class="dropdown-item" href="#">Last week, average per hour</a></li>
+      <li><a id="item-16" class="dropdown-item" href="#">Last month, average per hour</a></li>
     </ul>
   `;
 
@@ -339,5 +341,19 @@ const crPage = async (dataType = "none") => {
 };
 
 // ----------------------------------------------------------------------------------
+const crPage = async (dataType) => {
+  if (!dataType) {
+    mainData.resetTableState();
+    crSecPage(mainData.getType());
+    crMnPage();
+  } else {
+    document.getElementById("Header").innerText =
+      dataType.charAt(0).toUpperCase() + dataType.slice(1).replace("_", " ");
+    crSecPage(dataType, 20);
+  }
+};
+
+// ----------------------------------------------------------------------------------
 crNavbar();
+crDropDown();
 crPage();
