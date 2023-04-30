@@ -9,6 +9,6 @@ Follow the project instructions in Dropbox.
 
 # Instructions
 
-You can press any of the navbar links or select from dropdown to change the page. You can view averaged info over preselected timeframes from the other dropdown.
+You can press any of the navbar links or select from dropdown to change the page. You can also view averaged info over preselected timeframes from the other dropdown.
 
-On mainpage you can see datatypes and their values in datatable and latest selected info to the side. The page defaults to showing temperature info to the side.
+On mainpage you can see datatypes and their values in datatable and latest selected info to the side. The page defaults to showing temperature info. Selecting mainpage or the same dataset repeatedly should persist and not update the page unless needed.
