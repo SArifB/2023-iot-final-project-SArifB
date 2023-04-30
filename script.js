@@ -44,25 +44,49 @@ const stats = (() => {
   return { mean, median, mode, range, stdDev };
 })();
 
-const mainData = (() => {
+const latestData = (() => {
   let type = "temperature";
   let time = 0;
-  let tableState = false;
+  let mnTableState = true;
+  let secTableState = false;
+  let infoState = true;
 
-  const setType = (t) => (type = t);
+  const setType = (dataType) => (type = dataType);
   const getType = () => type;
 
-  const setTime = (t) => (time = t);
+  const setTime = (timeSpan) => (time = timeSpan);
   const getTime = () => time;
 
-  const resetTableState = () => (tableState = false);
-  const getTableState = () => {
-    if (tableState) return true;
-    tableState = true;
+  const getMnTableState = () => mnTableState;
+  const setMnTableState = (val) => (mnTableState = val);
+
+  const resetTableState = () => (secTableState = false);
+  const getTableState = (timeSpan) => {
+    if (secTableState || timeSpan !== time) return true;
+    secTableState = true;
     return false;
   };
 
-  return { setType, getType, setTime, getTime, resetTableState, getTableState };
+  const resetinfoState = (dataType, timeSpan) =>
+    dataType !== type || timeSpan !== time ? (infoState = true) : false;
+  const getinfoState = () => {
+    if (!infoState) return false;
+    infoState = false;
+    return true;
+  };
+
+  return {
+    setType,
+    getType,
+    setTime,
+    getTime,
+    getMnTableState,
+    setMnTableState,
+    resetTableState,
+    getTableState,
+    resetinfoState,
+    getinfoState,
+  };
 })();
 
 const fetchData = async (source) => {
@@ -112,6 +136,8 @@ const crNavbar = () => {
 
 // ----------------------------------------------------------------------------------
 const crMnPage = async () => {
+  if (latestData.getMnTableState() === false) return;
+
   document.getElementById("Header").innerText = "Main Page";
 
   document.getElementById("Data").innerHTML = `
@@ -152,9 +178,28 @@ const crMnPage = async () => {
 
 // ----------------------------------------------------------------------------------
 const crAddInfo = async (dataType, timeSpan) => {
-  const updTable = mainData.getTableState() && mainData.getTime() !== timeSpan;
+  const updTable = latestData.getTableState(timeSpan);
 
-  if (updTable)
+  latestData.resetinfoState(dataType, timeSpan);
+  const updSideInfo = latestData.getinfoState();
+
+  const showAltData = timeSpan >= 24;
+
+  latestData.setType(dataType);
+  latestData.setTime(timeSpan);
+
+  const rawData = showAltData
+    ? await fetchData(
+        `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/${timeSpan}`
+      )
+    : await fetchData(
+        `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/`
+      );
+
+  const date = rawData.map((x) => new Date(x.date_time));
+  const data = rawData.map((x) => parseFloat(x[dataType]));
+
+  if (updTable) {
     document.getElementById("Data").innerHTML = `
       <table class="table table-hover">
         <thead class="table-light">
@@ -169,29 +214,8 @@ const crAddInfo = async (dataType, timeSpan) => {
       </table>
     `;
 
-  document.getElementById("Chart").innerHTML = `
-    <canvas id="Forecast"></canvas>
-  `;
+    const tableBody = document.getElementById("TableBody");
 
-  const showAltData = timeSpan >= 24;
-
-  mainData.setType(dataType);
-  mainData.setTime(timeSpan);
-
-  const rawData = showAltData
-    ? await fetchData(
-        `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/${timeSpan}`
-      )
-    : await fetchData(
-        `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/`
-      );
-
-  const date = rawData.map((x) => new Date(x.date_time));
-  const data = rawData.map((x) => parseFloat(x[dataType]));
-
-  const tableBody = document.getElementById("TableBody");
-
-  if (updTable)
     data.forEach((elem, idx) => {
       const mainRow = document.createElement("tr");
       mainRow.innerHTML = `
@@ -201,66 +225,73 @@ const crAddInfo = async (dataType, timeSpan) => {
       `;
       tableBody.appendChild(mainRow);
     });
+  }
 
-  const fmtDataType = dataType.replace("_", " ");
+  if (updSideInfo) {
+    document.getElementById("Chart").innerHTML = `
+      <canvas id="Forecast"></canvas>
+  `;
 
-  const altText =
-    timeSpan > 72
-      ? `Average readings per hour of ${fmtDataType} for last ${
-          timeSpan / 24
-        } days`
-      : `Average readings per hour of ${fmtDataType} for last ${timeSpan} hours`;
+    const fmtDataType = dataType.replace("_", " ");
 
-  new Chart("Forecast", {
-    type: "bar",
-    data: {
-      labels: date.map((x) => x.toLocaleString()),
-      legend: fmtDataType,
-      datasets: [
-        {
-          backgroundColor: "#adf",
-          hoverBackgroundColor: "#7bf",
-          data: rawData.map((x) => x[dataType]),
-        },
-      ],
-    },
-    options: {
-      plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: showAltData ? altText : `20 latest ${fmtDataType} readings`,
+    const altText =
+      timeSpan > 72
+        ? `Average readings per hour of ${fmtDataType} for last ${
+            timeSpan / 24
+          } days`
+        : `Average readings per hour of ${fmtDataType} for last ${timeSpan} hours`;
+
+    new Chart("Forecast", {
+      type: "bar",
+      data: {
+        labels: date.map((x) => x.toLocaleString()),
+        legend: fmtDataType,
+        datasets: [
+          {
+            backgroundColor: "#adf",
+            hoverBackgroundColor: "#7bf",
+            data: rawData.map((x) => x[dataType]),
+          },
+        ],
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: showAltData ? altText : `20 latest ${fmtDataType} readings`,
+          },
         },
       },
-    },
-  });
+    });
 
-  document.getElementById("More").innerHTML = `
-    <h5 class="m-2">Additional info</h5>
-    <table class="table table-hover">
-      <tbody>
-        <tr>
-          <td>Mean</td>
-          <td>${stats.mean(data)}</td>
-        </tr>
-          <td>Median</td>
-          <td>${stats.median(data)}</td>
-        <tr>
-        </tr>
-          <td>Mode</td>
-          <td>${stats.mode(data)}</td>
-        <tr>
-        </tr>
-          <td>Range</td>
-          <td>${stats.range(data)}</td>
-        </tr>
-        <tr>
-          <td>Standard deviation</td>
-          <td>${stats.stdDev(data)}</td>
-        </tr>
-      </tbody>
-    </table>
-  `;
+    document.getElementById("More").innerHTML = `
+      <h5 class="m-2">Additional info</h5>
+      <table class="table table-hover">
+        <tbody>
+          <tr>
+            <td>Mean</td>
+            <td>${stats.mean(data)}</td>
+          </tr>
+            <td>Median</td>
+            <td>${stats.median(data)}</td>
+          <tr>
+          </tr>
+            <td>Mode</td>
+            <td>${stats.mode(data)}</td>
+          <tr>
+          </tr>
+            <td>Range</td>
+            <td>${stats.range(data)}</td>
+          </tr>
+          <tr>
+            <td>Standard deviation</td>
+            <td>${stats.stdDev(data)}</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+  }
 };
 
 // ----------------------------------------------------------------------------------
@@ -308,29 +339,32 @@ const crDropDown = () => {
   document.getElementById("item-06").onclick = () => crAddInfo("rain");
 
   document.getElementById("item-11").onclick = () =>
-    crAddInfo(mainData.getType());
+    crAddInfo(latestData.getType());
   document.getElementById("item-12").onclick = () =>
-    crAddInfo(mainData.getType(), 24);
+    crAddInfo(latestData.getType(), 24);
   document.getElementById("item-13").onclick = () =>
-    crAddInfo(mainData.getType(), 48);
+    crAddInfo(latestData.getType(), 48);
   document.getElementById("item-14").onclick = () =>
-    crAddInfo(mainData.getType(), 72);
+    crAddInfo(latestData.getType(), 72);
   document.getElementById("item-15").onclick = () =>
-    crAddInfo(mainData.getType(), 24 * 7);
+    crAddInfo(latestData.getType(), 24 * 7);
   document.getElementById("item-16").onclick = () =>
-    crAddInfo(mainData.getType(), 24 * 30);
+    crAddInfo(latestData.getType(), 24 * 30);
 };
 
 // ----------------------------------------------------------------------------------
 const crPage = async (dataType) => {
   if (!dataType) {
-    mainData.resetTableState();
-    crAddInfo(mainData.getType(), mainData.getTime());
+    latestData.resetTableState();
+    crAddInfo(latestData.getType(), latestData.getTime());
     crMnPage();
+    latestData.setMnTableState(false);
   } else {
     document.getElementById("Header").innerText =
       dataType.charAt(0).toUpperCase() + dataType.slice(1).replace("_", " ");
+    latestData.resetinfoState(dataType, latestData.getTime());
     crAddInfo(dataType);
+    latestData.setMnTableState(true);
   }
 };
 
