@@ -47,10 +47,15 @@ const stats = (() => {
 
 const mainData = (() => {
   let type = "temperature";
+  let time = 0;
   let updTable = false;
 
   const setType = (t) => (type = t);
   const getType = () => type;
+
+  const setTime = (t) => (time = t);
+  const getTime = () => time;
+
   const resetTableState = () => (updTable = false);
   const getTableState = () => {
     if (updTable) return true;
@@ -58,7 +63,7 @@ const mainData = (() => {
     return false;
   };
 
-  return { setType, getType, resetTableState, getTableState };
+  return { setType, getType, setTime, getTime, resetTableState, getTableState };
 })();
 
 const fetchData = async (source) => {
@@ -101,15 +106,9 @@ const crNavbar = () => {
   </nav>
 `;
 
-  document.getElementById("Page-1").addEventListener("click", () => crPage());
-
-  document
-    .getElementById("Page-2")
-    .addEventListener("click", () => crPage("temperature"));
-
-  document
-    .getElementById("Page-3")
-    .addEventListener("click", () => crPage("humidity_in"));
+  document.getElementById("Page-1").onclick = () => crPage();
+  document.getElementById("Page-2").onclick = () => crPage("temperature");
+  document.getElementById("Page-3").onclick = () => crPage("humidity_in");
 };
 
 // ----------------------------------------------------------------------------------
@@ -154,7 +153,7 @@ const crMnPage = async () => {
 
 // ----------------------------------------------------------------------------------
 const crSecPage = async (dataType, timeSpan) => {
-  const updTable = mainData.getTableState();
+  const updTable = mainData.getTableState() && mainData.getTime() !== timeSpan;
 
   if (updTable)
     document.getElementById("Data").innerHTML = `
@@ -178,6 +177,7 @@ const crSecPage = async (dataType, timeSpan) => {
   const showAltData = timeSpan >= 24;
 
   mainData.setType(dataType);
+  mainData.setTime(timeSpan);
 
   const rawData = showAltData
     ? await fetchData(
@@ -301,55 +301,37 @@ const crDropDown = () => {
     </ul>
   `;
 
-  document
-    .getElementById("item-01")
-    .addEventListener("click", () => crSecPage("temperature"));
-  document
-    .getElementById("item-02")
-    .addEventListener("click", () => crSecPage("humidity_in"));
-  document
-    .getElementById("item-03")
-    .addEventListener("click", () => crSecPage("humidity_out"));
-  document
-    .getElementById("item-04")
-    .addEventListener("click", () => crSecPage("light"));
-  document
-    .getElementById("item-05")
-    .addEventListener("click", () => crSecPage("wind_speed"));
-  document
-    .getElementById("item-06")
-    .addEventListener("click", () => crSecPage("rain"));
+  document.getElementById("item-01").onclick = () => crSecPage("temperature");
+  document.getElementById("item-02").onclick = () => crSecPage("humidity_in");
+  document.getElementById("item-03").onclick = () => crSecPage("humidity_out");
+  document.getElementById("item-04").onclick = () => crSecPage("light");
+  document.getElementById("item-05").onclick = () => crSecPage("wind_speed");
+  document.getElementById("item-06").onclick = () => crSecPage("rain");
 
-  document
-    .getElementById("item-11")
-    .addEventListener("click", () => crSecPage(mainData.getType()));
-  document
-    .getElementById("item-12")
-    .addEventListener("click", () => crSecPage(mainData.getType(), 24));
-  document
-    .getElementById("item-13")
-    .addEventListener("click", () => crSecPage(mainData.getType(), 48));
-  document
-    .getElementById("item-14")
-    .addEventListener("click", () => crSecPage(mainData.getType(), 72));
-  document
-    .getElementById("item-15")
-    .addEventListener("click", () => crSecPage(mainData.getType(), 24 * 7));
-  document
-    .getElementById("item-16")
-    .addEventListener("click", () => crSecPage(mainData.getType(), 24 * 30));
+  document.getElementById("item-11").onclick = () =>
+    crSecPage(mainData.getType());
+  document.getElementById("item-12").onclick = () =>
+    crSecPage(mainData.getType(), 24);
+  document.getElementById("item-13").onclick = () =>
+    crSecPage(mainData.getType(), 48);
+  document.getElementById("item-14").onclick = () =>
+    crSecPage(mainData.getType(), 72);
+  document.getElementById("item-15").onclick = () =>
+    crSecPage(mainData.getType(), 24 * 7);
+  document.getElementById("item-16").onclick = () =>
+    crSecPage(mainData.getType(), 24 * 30);
 };
 
 // ----------------------------------------------------------------------------------
 const crPage = async (dataType) => {
   if (!dataType) {
     mainData.resetTableState();
-    crSecPage(mainData.getType());
+    crSecPage(mainData.getType(), mainData.getTime());
     crMnPage();
   } else {
     document.getElementById("Header").innerText =
       dataType.charAt(0).toUpperCase() + dataType.slice(1).replace("_", " ");
-    crSecPage(dataType, 20);
+    crSecPage(dataType);
   }
 };
 
