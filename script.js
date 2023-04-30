@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------------
 const stats = (() => {
   const mean = (arr) => {
-    return arr.reduce((prev, curr) => prev + curr, 0) / arr.length;
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
   };
 
   const median = (arr) => {
@@ -16,14 +16,15 @@ const stats = (() => {
     let counter = {};
     let mode = [];
     let max = 0;
-    arr.forEach((n) => {
-      if (!counter[n]) counter[n] = 0;
-      counter[n] += 1;
 
-      if (counter[n] === max) mode.push(n);
-      else if (counter[n] > max) {
-        max = counter[n];
-        mode = [n];
+    arr.forEach((x) => {
+      if (!counter[x]) counter[x] = 0;
+      counter[x] += 1;
+
+      if (counter[x] === max) mode.push(x);
+      else if (counter[x] > max) {
+        max = counter[x];
+        mode = [x];
       }
     });
     return mode;
@@ -35,11 +36,9 @@ const stats = (() => {
   };
 
   const stdDev = (arr) => {
-    const mean = arr.reduce((prev, curr) => prev + curr, 0) / arr.length;
-    const tmp = arr.map((n) => {
-      return Math.pow(Math.abs(n - mean), 2);
-    });
-    return Math.sqrt(tmp.reduce((prev, curr) => prev + curr, 0) / tmp.length);
+    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+    const tmp = arr.map((x) => Math.pow(Math.abs(x - mean), 2));
+    return Math.sqrt(tmp.reduce((a, b) => a + b, 0) / tmp.length);
   };
 
   return { mean, median, mode, range, stdDev };
@@ -48,7 +47,7 @@ const stats = (() => {
 const mainData = (() => {
   let type = "temperature";
   let time = 0;
-  let updTable = false;
+  let tableState = false;
 
   const setType = (t) => (type = t);
   const getType = () => type;
@@ -56,10 +55,10 @@ const mainData = (() => {
   const setTime = (t) => (time = t);
   const getTime = () => time;
 
-  const resetTableState = () => (updTable = false);
+  const resetTableState = () => (tableState = false);
   const getTableState = () => {
-    if (updTable) return true;
-    updTable = true;
+    if (tableState) return true;
+    tableState = true;
     return false;
   };
 
@@ -152,7 +151,7 @@ const crMnPage = async () => {
 };
 
 // ----------------------------------------------------------------------------------
-const crSecPage = async (dataType, timeSpan) => {
+const crAddInfo = async (dataType, timeSpan) => {
   const updTable = mainData.getTableState() && mainData.getTime() !== timeSpan;
 
   if (updTable)
@@ -187,8 +186,8 @@ const crSecPage = async (dataType, timeSpan) => {
         `https://webapi19sa-1.course.tamk.cloud/v1/weather/${dataType}/`
       );
 
-  const date = rawData.map((n) => new Date(n.date_time));
-  const data = rawData.map((n) => parseFloat(n[dataType]));
+  const date = rawData.map((x) => new Date(x.date_time));
+  const data = rawData.map((x) => parseFloat(x[dataType]));
 
   const tableBody = document.getElementById("TableBody");
 
@@ -215,13 +214,13 @@ const crSecPage = async (dataType, timeSpan) => {
   new Chart("Forecast", {
     type: "bar",
     data: {
-      labels: date.map((n) => n.toLocaleString()),
+      labels: date.map((x) => x.toLocaleString()),
       legend: fmtDataType,
       datasets: [
         {
           backgroundColor: "#adf",
           hoverBackgroundColor: "#7bf",
-          data: rawData.map((n) => n[dataType]),
+          data: rawData.map((x) => x[dataType]),
         },
       ],
     },
@@ -301,37 +300,37 @@ const crDropDown = () => {
     </ul>
   `;
 
-  document.getElementById("item-01").onclick = () => crSecPage("temperature");
-  document.getElementById("item-02").onclick = () => crSecPage("humidity_in");
-  document.getElementById("item-03").onclick = () => crSecPage("humidity_out");
-  document.getElementById("item-04").onclick = () => crSecPage("light");
-  document.getElementById("item-05").onclick = () => crSecPage("wind_speed");
-  document.getElementById("item-06").onclick = () => crSecPage("rain");
+  document.getElementById("item-01").onclick = () => crAddInfo("temperature");
+  document.getElementById("item-02").onclick = () => crAddInfo("humidity_in");
+  document.getElementById("item-03").onclick = () => crAddInfo("humidity_out");
+  document.getElementById("item-04").onclick = () => crAddInfo("light");
+  document.getElementById("item-05").onclick = () => crAddInfo("wind_speed");
+  document.getElementById("item-06").onclick = () => crAddInfo("rain");
 
   document.getElementById("item-11").onclick = () =>
-    crSecPage(mainData.getType());
+    crAddInfo(mainData.getType());
   document.getElementById("item-12").onclick = () =>
-    crSecPage(mainData.getType(), 24);
+    crAddInfo(mainData.getType(), 24);
   document.getElementById("item-13").onclick = () =>
-    crSecPage(mainData.getType(), 48);
+    crAddInfo(mainData.getType(), 48);
   document.getElementById("item-14").onclick = () =>
-    crSecPage(mainData.getType(), 72);
+    crAddInfo(mainData.getType(), 72);
   document.getElementById("item-15").onclick = () =>
-    crSecPage(mainData.getType(), 24 * 7);
+    crAddInfo(mainData.getType(), 24 * 7);
   document.getElementById("item-16").onclick = () =>
-    crSecPage(mainData.getType(), 24 * 30);
+    crAddInfo(mainData.getType(), 24 * 30);
 };
 
 // ----------------------------------------------------------------------------------
 const crPage = async (dataType) => {
   if (!dataType) {
     mainData.resetTableState();
-    crSecPage(mainData.getType(), mainData.getTime());
+    crAddInfo(mainData.getType(), mainData.getTime());
     crMnPage();
   } else {
     document.getElementById("Header").innerText =
       dataType.charAt(0).toUpperCase() + dataType.slice(1).replace("_", " ");
-    crSecPage(dataType);
+    crAddInfo(dataType);
   }
 };
 
